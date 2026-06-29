@@ -1,6 +1,12 @@
 import { disconnectRedis, getPriceBand } from "../../lib/redis.js";
+import { requireApiKey, API_KEY_TYPES } from "../../lib/auth.js";
 
 export default async function handler(req) {
+    const authResponse = requireApiKey(req, API_KEY_TYPES.READ);
+    if (authResponse) {
+      return authResponse;
+    }
+
     const body = await req.json();
     const { symbol, series } = body;
     if (!symbol || !series) {

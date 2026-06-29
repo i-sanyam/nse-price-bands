@@ -6,6 +6,7 @@ import {
   parseSeedListCsv,
 } from "../../lib/nse.js";
 import { disconnectRedis, storePriceBandRows, getLastSeedDetails, setLastSeedDetails } from "../../lib/redis.js";
+import { requireApiKey, API_KEY_TYPES } from "../../lib/auth.js";
 
 function getValidDate (date) {
   if (date && !dayjs(date, "DD-MM-YYYY", true).isValid()) { // param date is invalid
@@ -18,6 +19,11 @@ function getValidDate (date) {
 
 export default async function handler(req, context) {
   try {
+    const authResponse = requireApiKey(req, API_KEY_TYPES.WRITE);
+    if (authResponse) {
+      return authResponse;
+    }
+
     const body = await req.json();
     const date = getValidDate(body.date);
     if (!date) {
