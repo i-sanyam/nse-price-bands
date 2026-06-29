@@ -13,7 +13,7 @@ export default async function handler() {
 
     return new Response(
       JSON.stringify({
-        ok: true,
+        success: true,
         date: formatDateDDMMYYYY(date),
         url: csvUrl,
         rowCount: rows.length,
@@ -28,7 +28,7 @@ export default async function handler() {
     console.error("Price Bands List Sync Failed:", error);
     return new Response(
       JSON.stringify({
-        ok: false,
+        success: false,
         date: formatDateDDMMYYYY(),
         error: error instanceof Error ? error.message : "Unknown error",
       }),
@@ -41,3 +41,8 @@ export default async function handler() {
     await disconnectRedis();
   }
 }
+
+export const config = {
+  path: "/syncPriceBands",
+  method: "GET",
+};
