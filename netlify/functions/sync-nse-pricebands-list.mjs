@@ -1,20 +1,20 @@
 import {
   fetchSecListCsv,
-  formatDateDDMMYYYY,
   parseSecListCsv,
 } from "../../lib/nse.js";
 import { disconnectRedis, storeSecListRows } from "../../lib/redis.js";
 
-export default async function handler() {
+export default async function handler(req, context) {
   try {
-    const { date, url: csvUrl, response: csvText } = await fetchSecListCsv();
+    const body = await req.json();
+    const { date, url: csvUrl, response: csvText } = await fetchSecListCsv(body.date);
     const rows = parseSecListCsv(csvText);
     const storedCount = await storeSecListRows(rows);
 
     return new Response(
       JSON.stringify({
+        date,
         success: true,
-        date: formatDateDDMMYYYY(date),
         url: csvUrl,
         rowCount: rows.length,
         storedCount,
@@ -28,9 +28,9 @@ export default async function handler() {
     console.error("Price Bands List Sync Failed:", error);
     return new Response(
       JSON.stringify({
+        error,
         success: false,
-        date: formatDateDDMMYYYY(),
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: error instanceof Error ? error.message : "Unknown error",
       }),
       {
         status: 500,
@@ -43,6 +43,6 @@ export default async function handler() {
 }
 
 export const config = {
-  path: "/syncPriceBands",
-  method: "GET",
-};
+  // path: "/syncPriceBands",
+  method: "POST",
+}
