@@ -1,7 +1,7 @@
-import syncPriceBands from './sync-nse-pricebands-list.mjs'
+import seedPriceBands from './seed-price-bands.mjs'
 
 export default async function handler() {
-    return syncPriceBands();
+    return seedPriceBands();
 }
 
 export const config = {
