@@ -3,9 +3,9 @@ import customParseFormat from 'dayjs/plugin/customParseFormat.js'; // required f
 dayjs.extend(customParseFormat);
 import {
   fetchListCsv,
-  parseSeedListCsv,
+  parseUpdateListCsv,
 } from "../../lib/nse.js";
-import { disconnectRedis, storePriceBandRows, getLastSeedDetails, setLastSeedDetails } from "../../lib/redis.js";
+import { disconnectRedis, updatePriceBandRows, getLastUpdateDetails, setLastUpdateDetails } from "../../lib/redis.js";
 
 function getValidDate (date) {
   if (date && !dayjs(date, "DD-MM-YYYY", true).isValid()) { // param date is invalid
@@ -24,37 +24,38 @@ export default async function handler(req, context) {
       throw new Error(`${date} is invalid`);
     }
     if (!body.forceUpdate) {
-      const lastSeedData = await getLastSeedDetails();
-      if (lastSeedData.date === date) {
-        return new Response(
-          JSON.stringify({
-            date: lastSeedData.date,
-            success: true,
-            rowCount: lastSeedData.rows,
-            storedCount: lastSeedData.stored,
-            lastSeedTime: lastSeedData.t,
-            message: "Price Bands already seeded"
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      }
+        const lastUpdatedData = await getLastUpdateDetails();
+        if (lastUpdatedData.date === date) {
+          return new Response(
+            JSON.stringify({
+              date: lastUpdatedData.date,
+              success: true,
+              rowCount: lastUpdatedData.rows,
+              storedCount: lastUpdatedData.stored,
+              mismatchCount: lastUpdatedData.mismatch,
+              uptodateCount: lastUpdatedData.uptodate,
+              lastUpdatedAt: lastUpdatedData.t,
+              message: "Price Bands already updated"
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+        }
     }
-
-    const { url: csvUrl, response: csvText } = await fetchListCsv(date, "SEED");
-    const rows = parseSeedListCsv(csvText);
-    const storedCount = await storePriceBandRows(rows);
-    await setLastSeedDetails(date, rows.length, storedCount);
+    const { url: csvUrl, response: csvText } = await fetchListCsv(date, "UPDATE");
+    const rows = parseUpdateListCsv(csvText);
+    const { stored: storedCount, mismatch: mismatchCount, uptodate: uptodateCount } = await updatePriceBandRows(rows);
+    await setLastUpdateDetails(date, rows.length, storedCount, mismatchCount, uptodateCount);
     return new Response(
       JSON.stringify({
         date,
         success: true,
         url: csvUrl,
         rowCount: rows.length,
-        storedCount,
-        message: "Price Bands seeded successfully"
+        storedCount, mismatchCount, uptodateCount,
+        message: "Price Bands updated successfully"
       }),
       {
         status: 201,
